@@ -1,0 +1,15 @@
+{
+  "name": "GamePulse FR",
+  "short_name": "GamePulse",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a12",
+  "theme_color": "#8b5cf6",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3612/3612569.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

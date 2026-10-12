@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GamePulse FR - Gaming Live en Français</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#8b5cf6">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a12;color:white;font-family:Inter,system-ui;padding:16px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.badge-live{background:#10b981;color:white;padding:4px 10px;border-radius:20px;font-size:12px;animation:pulse 2s infinite}
+@keyframes pulse{0%{opacity:1}50%{opacity:0.6}100%{opacity:1}}
+.install-btn{background:linear-gradient(90deg,#8b5cf6,#06b6d4);border:none;padding:12px 20px;border-radius:12px;color:white;font-weight:bold;width:100%;margin-bottom:16px;cursor:pointer}
+.search{width:100%;padding:12px;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;color:white;margin-bottom:16px}
+.card{background:#15152a;border:1px solid #2a2a4a;border-radius:16px;padding:14px;margin-bottom:12px}
+.card small{color:#888}
+.card h3{margin:6px 0;color:#fff}
+.orig{color:#666;font-size:12px}
+.meta{display:flex;gap:8px;margin-top:8px;font-size:11px;color:#aaa}
+</style>
+</head>
+<body>
+<div class="header">
+<h2>🎮 GamePulse FR</h2>
+<span class="badge-live">● CONNECTÉ LIVE</span>
+</div>
+<button class="install-btn" id="installBtn">📲 INSTALLER L'APP</button>
+<input class="search" id="search" placeholder="Rechercher un jeu : GTA 6, Valorant...">
+<div id="feed">Chargement live...</div>
+
+<script>
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  document.getElementById('installBtn').style.display='block';
+});
+document.getElementById('installBtn').onclick=async()=>{
+  if(deferredPrompt){ deferredPrompt.prompt(); const r=await deferredPrompt.userChoice; deferredPrompt=null; }
+  else{ alert('Sur Chrome: Menu ⋮ > Installer l\'application'); }
+};
+
+async function load(q='gaming'){
+  const feed=document.getElementById('feed');
+  feed.innerHTML='⏳ Récupération temps réel...';
+  try{
+    // Appelle TA VRAIE API déployée
+    const apiUrl = window.location.origin + `/api/gaming?q=${encodeURIComponent(q)}`;
+    // En local preview, fallback vers Reddit direct
+    let data;
+    try{
+      const res = await fetch(apiUrl);
+      data = await res.json();
+    }catch{
+      // Fallback direct si API pas encore déployée
+      const r = await fetch(`https://www.reddit.com/r/gaming/new.json?limit=10`);
+      const j = await r.json();
+      data = { data: j.data.children.map(c=>({titre_original:c.data.title,titre_fr:c.data.title,jeu:c.data.subreddit,source:`r/${c.data.subreddit}`,upvotes:c.data.score,url:`https://reddit.com${c.data.permalink}`})) };
+    }
+    feed.innerHTML='';
+    (data.data||[]).forEach(item=>{
+      const div=document.createElement('div');
+      div.className='card';
+      div.innerHTML=`<small class="orig">${item.langue_originale||'en'} → FR ${item.traduit?'• Traduit':''}</small><h3>${item.titre_fr||item.titre_original}</h3><div class="orig">Original: ${item.titre_original}</div><div class="meta"><span>🔥 ${item.upvotes||0}</span><span>${item.source||''}</span><a href="${item.url||'#'}" target="_blank" style="color:#8b5cf6">Voir</a></div>`;
+      feed.appendChild(div);
+    });
+  }catch(e){ feed.innerHTML='Erreur: '+e.message; }
+}
+load();
+document.getElementById('search').addEventListener('input', (e)=>{ if(e.target.value.length>2) load(e.target.value); if(e.target.value==='') load(); });
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js'); }
+</script>
+</body>
+</html>
